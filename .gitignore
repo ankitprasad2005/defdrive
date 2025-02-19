@@ -1,0 +1,7 @@
+# envireonments
+.env
+.env/
+.venv/
+
+# go things
+go.sum

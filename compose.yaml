@@ -1,0 +1,45 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_NAME=${POSTGRES_DB}
+      - JWT_SECRET=${JWT_SECRET}
+    ports:
+      - 8080:8080
+    depends_on:
+      - db
+
+  db:
+    image: postgres:14
+    user: ${UID}:${GID}
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    healthcheck:
+      interval: 10s
+      retries: 10
+      test: 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"'
+      timeout: 2s
+    volumes:
+      - ${DATA_PATH}:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+
+  # admin_db:
+  #   image: nocodb/nocodb:latest
+  #   environment:
+  #     NC_DB: pg://db:5432?u=${POSTGRES_USER}&p=${POSTGRES_PASSWORD}&d=${POSTGRES_DB}
+  #   volumes:
+  #     - nc_data:/usr/app/data
+  #   ports:
+  #     - ${PORT_ADMIN}:8080
+  #   depends_on:
+  #     - db
