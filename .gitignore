@@ -6,4 +6,6 @@
 # go things
 go.sum
 
-backup/
+# for dev test
+db_data/
+data/

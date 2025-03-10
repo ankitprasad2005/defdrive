@@ -1,33 +1,39 @@
 services:
-  # app:
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile
-  #   environment:
-  #     - DB_HOST=db
-  #     - DB_PORT=5432
-  #     - DB_USER=${POSTGRES_USER}
-  #     - DB_PASSWORD=${POSTGRES_PASSWORD}
-  #     - DB_NAME=${POSTGRES_DB}
-  #     - JWT_SECRET=${JWT_SECRET}
-  #   ports:
-  #     - 8080:8080
-  #   depends_on:
-  #     db: 
-  #       condition: service_healthy
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=${DB_USER}
+      - DB_PASSWD=${DB_PASSWD}
+      - DB_NAME=${DB_NAME}
+      - JWT_SECRET=${JWT_SECRET}
+      - TZ=${TZ}
+      - PORT=8080
+      - DATA_PATH=/app/data
+    ports:
+      - "${PORT:-8080}:8080"
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      db: 
+        condition: service_healthy
+    restart: unless-stopped
 
   db:
     image: postgres:14
-    user: ${UID}:${GID}
+    # user: ${UID}:${GID}
     environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWD}
+      - POSTGRES_DB=${DB_NAME}
       - PGDATA=/var/lib/postgresql/data/pgdata
     healthcheck:
       interval: 10s
       retries: 10
-      test: 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"'
+      test: pg_isready -U ${DB_USER} -d ${DB_NAME}
       timeout: 2s
     volumes:
       - db_data:/var/lib/postgresql/data
@@ -46,4 +52,4 @@ services:
   #     - db
 
 volumes:
-  db_data: {}
+  db_data:

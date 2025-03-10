@@ -1,4 +1,4 @@
-FROM golang:1.20-alpine
+FROM golang:1.23-alpine
 
 WORKDIR /app
 
@@ -6,7 +6,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
-RUN go build -o main ./cmd/main.go
+RUN go build -o defdrive ./main.go
 
 EXPOSE 8080
-CMD ["./main"]
+CMD ["./defdrive"]
