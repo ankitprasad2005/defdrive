@@ -1,18 +1,12 @@
 package controllers
 
 import (
-	"crypto/sha256"
 	"defdrive/models"
-	"encoding/hex"
-	"fmt"
-	"io"
-	"mime/multipart"
 	"net/http"
-	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -20,155 +14,112 @@ type FileController struct {
 	DB *gorm.DB
 }
 
+// NewFileController creates a new file controller
 func NewFileController(db *gorm.DB) *FileController {
 	return &FileController{DB: db}
 }
 
 // Upload handles file uploads
 func (fc *FileController) Upload(c *gin.Context) {
-	// Get the logged-in user from the JWT token
+	// Get current user ID from context (set by auth middleware)
 	userID, exists := c.Get("userID")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
 		return
 	}
 
-	// Find the user in the database
-	var user models.User
-	if result := fc.DB.Where("user_id = ?", userID).First(&user); result.Error != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
-		return
-	}
-
-	// Get the file from the form
+	// Get file from request
 	file, err := c.FormFile("file")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "No file provided"})
 		return
 	}
 
-	// Generate a unique file ID
-	fileID := uuid.New().String()
+	// Generate storage path
+	storagePath := filepath.Join("uploads", filepath.Base(file.Filename))
 
-	// Create the directory if it doesn't exist
-	dataPath := os.Getenv("DATA_PATH")
-	if dataPath == "" {
-		dataPath = "./data"
-	}
-
-	// Create a directory specific to the user
-	userDirPath := filepath.Join(dataPath, user.UserID)
-	if err := os.MkdirAll(userDirPath, 0755); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create storage directory"})
-		return
-	}
-
-	// Use the fileID in the filename to ensure uniqueness
-	// This way each file will have a unique name even if uploaded by the same user
-	filename := fmt.Sprintf("%s-%s", fileID, file.Filename)
-	filePath := filepath.Join(userDirPath, filename)
-
-	// Save the file
-	if err := saveFile(file, filePath); err != nil {
+	// Save file to disk
+	if err := c.SaveUploadedFile(file, storagePath); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
 		return
 	}
 
-	// Calculate SHA-256 hash of the file
-	fileHash, err := calculateSHA256(filePath)
-	if err != nil {
-		// If hash calculation fails, clean up and return error
-		os.Remove(filePath)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to calculate file hash"})
-		return
-	}
-
-	// Get public status from form, default to false (private)
-	public := false
-	if publicStr := c.PostForm("public"); publicStr == "true" {
-		public = true
-	}
-
-	// Create the file record in the database
+	// Create file record in database
 	fileRecord := models.File{
-		FileID:   fileID,
-		Name:     file.Filename, // Keep the original filename in the database
-		Location: filePath,      // Store the full path with unique filename
-		OwnerID:  user.UserID,   // Set foreign key directly
-		Public:   public,        // Using the boolean field
+		Name:     file.Filename,
+		Location: storagePath,
+		OwnerID:  userID.(uint),
 		Size:     file.Size,
-		Hash:     fileHash,
-		Accesses: []models.Access{}, // Empty initially
+		Public:   false, // Default to private
 	}
 
 	if result := fc.DB.Create(&fileRecord); result.Error != nil {
-		// Clean up the file if the database operation fails
-		os.Remove(filePath)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to register file"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to record file in database"})
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{
+	c.JSON(http.StatusOK, gin.H{
 		"message": "File uploaded successfully",
 		"file":    fileRecord,
 	})
 }
 
-// ListFiles retrieves all files for the authenticated user
+// ListFiles returns all files belonging to the current user
 func (fc *FileController) ListFiles(c *gin.Context) {
-	// Get the logged-in user from the JWT token
 	userID, exists := c.Get("userID")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
 		return
 	}
 
 	var files []models.File
-	if result := fc.DB.Where("owner_id = ?", userID).Find(&files); result.Error != nil {
+	result := fc.DB.Where("owner_id = ?", userID).Find(&files)
+	if result.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve files"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"files": files,
-	})
+	c.JSON(http.StatusOK, gin.H{"files": files})
 }
 
-// TogglePublicAccess allows users to change a file's public status
+// TogglePublicAccess changes the public status of a file
 func (fc *FileController) TogglePublicAccess(c *gin.Context) {
-	// Get the logged-in user from the JWT token
 	userID, exists := c.Get("userID")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
 		return
 	}
 
-	// Get file ID from URL parameter
-	fileID := c.Param("fileID")
-	if fileID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "File ID is required"})
+	fileID, err := strconv.ParseUint(c.Param("fileID"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid file ID"})
 		return
 	}
 
-	// Find the file and check if user has permission
 	var file models.File
-	if result := fc.DB.Where("file_id = ? AND owner_id = ?", fileID, userID).First(&file); result.Error != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "File not found or you don't have permission"})
+	if err := fc.DB.First(&file, uint(fileID)).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "File not found"})
+		return
+	}
+
+	// Check if user owns the file
+	if file.OwnerID != userID.(uint) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "You don't have permission to modify this file"})
 		return
 	}
 
 	// Parse request body
-	var input struct {
+	var requestBody struct {
 		Public bool `json:"public"`
 	}
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := c.ShouldBindJSON(&requestBody); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
 
-	// Update the file's public status
-	file.Public = input.Public
-	if result := fc.DB.Save(&file); result.Error != nil {
+	// Update public status
+	file.Public = requestBody.Public
+	if err := fc.DB.Save(&file).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update file"})
 		return
 	}
@@ -179,102 +130,46 @@ func (fc *FileController) TogglePublicAccess(c *gin.Context) {
 	})
 }
 
-// DeleteFile completely removes a file, including database records and the physical file
+// DeleteFile removes a file from the system
 func (fc *FileController) DeleteFile(c *gin.Context) {
-	// Get the logged-in user from the JWT token
 	userID, exists := c.Get("userID")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
 		return
 	}
 
-	// Get file ID from URL parameter
-	fileID := c.Param("fileID")
-	if fileID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "File ID is required"})
+	fileID, err := strconv.ParseUint(c.Param("fileID"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid file ID"})
 		return
 	}
 
-	// Find the file and check if the user has permission
 	var file models.File
-	if result := fc.DB.Where("file_id = ? AND owner_id = ?", fileID, userID).First(&file); result.Error != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "File not found or you don't have permission"})
+	if err := fc.DB.First(&file, uint(fileID)).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "File not found"})
 		return
 	}
 
-	// Start a transaction to ensure database consistency
-	tx := fc.DB.Begin()
-	if tx.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to begin transaction"})
+	// Check if user owns the file
+	if file.OwnerID != userID.(uint) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "You don't have permission to delete this file"})
 		return
 	}
 
-	// Delete all access records for this file first
-	if err := tx.Where("file_id = ?", fileID).Delete(&models.Access{}).Error; err != nil {
-		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete access records"})
+	// Delete any associated accesses first (cascade delete)
+	if err := fc.DB.Where("file_id = ?", uint(fileID)).Delete(&models.Access{}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete file accesses"})
 		return
 	}
 
-	// Delete the file record from the database
-	if err := tx.Delete(&file).Error; err != nil {
-		tx.Rollback()
+	// Delete the file record
+	if err := fc.DB.Delete(&file).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete file record"})
 		return
 	}
 
-	// Commit the transaction
-	if err := tx.Commit().Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to commit transaction"})
-		return
-	}
+	// In a production system, you would also delete the physical file here
+	// os.Remove(file.Location)
 
-	// Delete the physical file
-	if err := os.Remove(file.Location); err != nil {
-		// Note: We don't rollback database changes if physical file deletion fails
-		// This is a design decision - you might want to handle this differently
-		c.JSON(http.StatusOK, gin.H{
-			"message": "File record deleted but could not delete physical file",
-			"error":   err.Error(),
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"message": "File deleted successfully",
-	})
-}
-
-// Helper function to save a file
-func saveFile(file *multipart.FileHeader, dst string) error {
-	src, err := file.Open()
-	if err != nil {
-		return err
-	}
-	defer src.Close()
-
-	out, err := os.Create(dst)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-
-	_, err = io.Copy(out, src)
-	return err
-}
-
-// calculateSHA256 computes the SHA-256 hash of a file
-func calculateSHA256(filePath string) (string, error) {
-	file, err := os.Open(filePath)
-	if err != nil {
-		return "", err
-	}
-	defer file.Close()
-
-	hash := sha256.New()
-	if _, err := io.Copy(hash, file); err != nil {
-		return "", err
-	}
-
-	return hex.EncodeToString(hash.Sum(nil)), nil
+	c.JSON(http.StatusOK, gin.H{"message": "File deleted successfully"})
 }

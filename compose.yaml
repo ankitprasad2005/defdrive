@@ -4,11 +4,13 @@ services:
       context: .
       dockerfile: Dockerfile
     environment:
-      - DB_HOST=db
-      - DB_PORT=5432
-      - DB_USER=${DB_USER}
-      - DB_PASSWD=${DB_PASSWD}
-      - DB_NAME=${DB_NAME}
+      - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      - WORKERS=${WORKERS}
+      # - DB_HOST=db
+      # - DB_PORT=5432
+      # - DB_USER=${DB_USER}
+      # - DB_PASSWD=${DB_PASSWD}
+      # - DB_NAME=${DB_NAME}
       - JWT_SECRET=${JWT_SECRET}
       - TZ=${TZ}
       - PORT=8080
@@ -26,19 +28,19 @@ services:
     image: postgres:14
     # user: ${UID}:${GID}
     environment:
-      - POSTGRES_USER=${DB_USER}
-      - POSTGRES_PASSWORD=${DB_PASSWD}
-      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
       - PGDATA=/var/lib/postgresql/data/pgdata
     healthcheck:
       interval: 10s
       retries: 10
-      test: pg_isready -U ${DB_USER} -d ${DB_NAME}
+      test: pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}
       timeout: 2s
     volumes:
-      - db_data:/var/lib/postgresql/data
+      - ./db_data:/var/lib/postgresql/data
     ports:
-      - 5432:5432
+      - ${DB_PORT}:5432
 
   # admin_db:
   #   image: nocodb/nocodb:latest
@@ -52,4 +54,4 @@ services:
   #     - db
 
 volumes:
-  db_data:
+  db_data: {}

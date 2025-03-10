@@ -6,13 +6,13 @@ import (
 
 type File struct {
 	gorm.Model
-	FileID   string `gorm:"unique;not null"`
+	FileID   uint `gorm:"primaryKey"` // Unique identifier for each file in the system
 	Name     string
 	Location string
-	OwnerID  string `gorm:"index"` // Foreign key to User.UserID
-	Owner    User   `gorm:"foreignKey:OwnerID;references:UserID"`
-	Public   bool   `gorm:"default:false"` // Renamed from Access to Public for clarity, default is private (false)
+	OwnerID  uint `gorm:"index"`                            // Foreign key linking to the User who owns this file, indexed for performance
+	Owner    User `gorm:"foreignKey:OwnerID;references:ID"` // Relationship to User model
+	Public   bool `gorm:"default:false"`                    // Flag indicating if file is publicly accessible
 	Size     int64
 	Hash     string
-	Accesses []Access `gorm:"foreignKey:FileID;references:FileID"`
+	Accesses []Access `gorm:"foreignKey:FileID;references:FileID"` // One-to-many relationship with Access model
 }

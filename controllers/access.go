@@ -3,7 +3,7 @@ package controllers
 import (
 	"defdrive/models"
 	"net/http"
-	"time"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -14,175 +14,168 @@ type AccessController struct {
 	DB *gorm.DB
 }
 
+// NewAccessController creates a new access controller
 func NewAccessController(db *gorm.DB) *AccessController {
 	return &AccessController{DB: db}
 }
 
-// CreateAccess generates a new access entry for a file
+// CreateAccess generates a new access record for a file
 func (ac *AccessController) CreateAccess(c *gin.Context) {
-	// Get the logged-in user from the JWT token
 	userID, exists := c.Get("userID")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
 		return
 	}
 
-	// Get file ID from URL parameter
-	fileID := c.Param("fileID")
-	if fileID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "File ID is required"})
+	fileID, err := strconv.ParseUint(c.Param("fileID"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid file ID"})
 		return
 	}
 
-	// Find the file and check if user has permission
+	// Check if the user owns the file
 	var file models.File
-	if result := ac.DB.Where("file_id = ? AND owner_id = ?", fileID, userID).First(&file); result.Error != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "File not found or you don't have permission"})
+	if err := ac.DB.First(&file, uint(fileID)).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "File not found"})
+		return
+	}
+
+	if file.OwnerID != userID.(uint) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "You don't have permission to create access for this file"})
 		return
 	}
 
 	// Parse request body
-	var input struct {
-		Name    string `json:"name"` // Added name field
+	var accessRequest struct {
+		Name    string `json:"name"`
 		Subnet  string `json:"subnet"`
 		IP      string `json:"ip"`
 		Expires string `json:"expires"`
 		Public  bool   `json:"public"`
 	}
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+
+	if err := c.ShouldBindJSON(&accessRequest); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
 
-	// Validate expiration date if provided
-	if input.Expires != "" {
-		_, err := time.Parse(time.RFC3339, input.Expires)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid expiration date format. Use RFC3339 format (e.g. 2023-01-01T15:04:05Z)"})
-			return
-		}
-	}
+	// Generate a unique access link
+	link := uuid.New().String()
 
-	// Create access record
+	// Create the access record
 	access := models.Access{
-		AccessID: uuid.New().String(),
-		FileID:   fileID,
-		Name:     input.Name,          // Set name from input
-		Link:     uuid.New().String(), // Generate a random link ID
-		Subnet:   input.Subnet,
-		IP:       input.IP,
-		Expires:  input.Expires,
-		Public:   input.Public,
+		FileID:  uint(fileID),
+		Name:    accessRequest.Name,
+		Link:    link,
+		Subnet:  accessRequest.Subnet,
+		IP:      accessRequest.IP,
+		Expires: accessRequest.Expires,
+		Public:  accessRequest.Public,
 	}
 
 	if result := ac.DB.Create(&access); result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create access"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create access record"})
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{
+	c.JSON(http.StatusOK, gin.H{
 		"message": "Access created successfully",
 		"access":  access,
 	})
 }
 
-// ListAccesses retrieves all accesses for a specific file
+// ListAccesses returns all accesses for a file
 func (ac *AccessController) ListAccesses(c *gin.Context) {
-	// Get the logged-in user from the JWT token
 	userID, exists := c.Get("userID")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
 		return
 	}
 
-	// Get file ID from URL parameter
-	fileID := c.Param("fileID")
-	if fileID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "File ID is required"})
+	fileID, err := strconv.ParseUint(c.Param("fileID"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid file ID"})
 		return
 	}
 
-	// Check if user owns the file
+	// Check if the user owns the file
 	var file models.File
-	if result := ac.DB.Where("file_id = ? AND owner_id = ?", fileID, userID).First(&file); result.Error != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "File not found or you don't have permission"})
+	if err := ac.DB.First(&file, uint(fileID)).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "File not found"})
 		return
 	}
 
-	// Get all accesses for the file
+	if file.OwnerID != userID.(uint) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "You don't have permission to view accesses for this file"})
+		return
+	}
+
+	// Fetch all accesses for the file
 	var accesses []models.Access
-	if result := ac.DB.Where("file_id = ?", fileID).Find(&accesses); result.Error != nil {
+	if err := ac.DB.Where("file_id = ?", uint(fileID)).Find(&accesses).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve accesses"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"accesses": accesses,
-	})
+	c.JSON(http.StatusOK, gin.H{"accesses": accesses})
 }
 
-// UpdateAccess allows modifying an existing access entry
+// UpdateAccess modifies an existing access record
 func (ac *AccessController) UpdateAccess(c *gin.Context) {
-	// Get the logged-in user from the JWT token
 	userID, exists := c.Get("userID")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
 		return
 	}
 
-	// Get access ID from URL parameter
-	accessID := c.Param("accessID")
-	if accessID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Access ID is required"})
+	accessID, err := strconv.ParseUint(c.Param("accessID"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid access ID"})
 		return
 	}
 
-	// Find the access entry
+	// Find the access record and associated file
 	var access models.Access
-	if result := ac.DB.Where("access_id = ?", accessID).First(&access); result.Error != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Access entry not found"})
+	if err := ac.DB.First(&access, uint(accessID)).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Access record not found"})
 		return
 	}
 
-	// Verify the user owns the file associated with this access
+	// Check if the user owns the file
 	var file models.File
-	if result := ac.DB.Where("file_id = ? AND owner_id = ?", access.FileID, userID).First(&file); result.Error != nil {
-		c.JSON(http.StatusForbidden, gin.H{"error": "You don't have permission to modify this access"})
+	if err := ac.DB.First(&file, access.FileID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "File not found"})
+		return
+	}
+
+	if file.OwnerID != userID.(uint) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "You don't have permission to update this access"})
 		return
 	}
 
 	// Parse request body
-	var input struct {
-		Name    string `json:"name"` // Added name field
+	var updateRequest struct {
+		Name    string `json:"name"`
 		Subnet  string `json:"subnet"`
 		IP      string `json:"ip"`
 		Expires string `json:"expires"`
 		Public  bool   `json:"public"`
 	}
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+
+	if err := c.ShouldBindJSON(&updateRequest); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
 
-	// Validate expiration date if provided
-	if input.Expires != "" {
-		_, err := time.Parse(time.RFC3339, input.Expires)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid expiration date format. Use RFC3339 format (e.g. 2023-01-01T15:04:05Z)"})
-			return
-		}
-	}
+	// Update the access record
+	access.Name = updateRequest.Name
+	access.Subnet = updateRequest.Subnet
+	access.IP = updateRequest.IP
+	access.Expires = updateRequest.Expires
+	access.Public = updateRequest.Public
 
-	// Update access fields
-	access.Name = input.Name // Update name
-	access.Subnet = input.Subnet
-	access.IP = input.IP
-	access.Expires = input.Expires
-	access.Public = input.Public
-
-	// Save the updated access entry
-	if result := ac.DB.Save(&access); result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update access"})
+	if err := ac.DB.Save(&access).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update access record"})
 		return
 	}
 
@@ -192,43 +185,44 @@ func (ac *AccessController) UpdateAccess(c *gin.Context) {
 	})
 }
 
-// DeleteAccess removes an existing access entry
+// DeleteAccess removes an access record
 func (ac *AccessController) DeleteAccess(c *gin.Context) {
-	// Get the logged-in user from the JWT token
 	userID, exists := c.Get("userID")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
 		return
 	}
 
-	// Get access ID from URL parameter
-	accessID := c.Param("accessID")
-	if accessID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Access ID is required"})
+	accessID, err := strconv.ParseUint(c.Param("accessID"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid access ID"})
 		return
 	}
 
-	// Find the access entry
+	// Find the access record and associated file
 	var access models.Access
-	if result := ac.DB.Where("access_id = ?", accessID).First(&access); result.Error != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Access entry not found"})
+	if err := ac.DB.First(&access, uint(accessID)).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Access record not found"})
 		return
 	}
 
-	// Verify the user owns the file associated with this access
+	// Check if the user owns the file
 	var file models.File
-	if result := ac.DB.Where("file_id = ? AND owner_id = ?", access.FileID, userID).First(&file); result.Error != nil {
+	if err := ac.DB.First(&file, access.FileID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "File not found"})
+		return
+	}
+
+	if file.OwnerID != userID.(uint) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "You don't have permission to delete this access"})
 		return
 	}
 
-	// Delete the access entry
-	if result := ac.DB.Delete(&access); result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete access"})
+	// Delete the access record
+	if err := ac.DB.Delete(&access).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete access record"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Access deleted successfully",
-	})
+	c.JSON(http.StatusOK, gin.H{"message": "Access deleted successfully"})
 }

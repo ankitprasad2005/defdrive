@@ -3,7 +3,6 @@ package main
 import (
 	"defdrive/models"
 	"defdrive/routes"
-	"fmt"
 	"log"
 	"os"
 	"time"
@@ -20,27 +19,20 @@ func main() {
 		log.Println("Warning: Error loading .env file, using environment variables")
 	}
 
-	// Get database connection parameters from environment variables
-	dbHost := os.Getenv("DB_HOST")
-	dbUser := os.Getenv("DB_USER")
-	dbPassword := os.Getenv("DB_PASSWD") // Changed from DB_PASSWORD to DB_PASSWD to match .env
-	dbName := os.Getenv("DB_NAME")
-	dbPort := os.Getenv("DB_PORT")
-	timezone := os.Getenv("TZ")
+	// Get database URL from environment variables
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		log.Fatalf("DATABASE_URL environment variable not set")
+	}
 
-	// Log connection details for debugging
-	log.Printf("Connecting to database: host=%s, user=%s, dbname=%s, port=%s",
-		dbHost, dbUser, dbName, dbPort)
-
-	// Construct DSN (Data Source Name)
-	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=%s",
-		dbHost, dbUser, dbPassword, dbName, dbPort, timezone)
+	// Log connection attempt
+	log.Printf("Connecting to database using DATABASE_URL")
 
 	// Connect to the database with retry logic
 	var db *gorm.DB
 	maxRetries := 5
 	for i := 0; i < maxRetries; i++ {
-		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+		db, err = gorm.Open(postgres.Open(dbURL), &gorm.Config{})
 		if err == nil {
 			break
 		}

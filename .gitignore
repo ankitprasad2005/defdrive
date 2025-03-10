@@ -9,3 +9,4 @@ go.sum
 # for dev test
 db_data/
 data/
+archieve/

@@ -6,9 +6,9 @@ import (
 
 type User struct {
 	gorm.Model
-	UserID   string `gorm:"unique;not null"`
+	UserID   uint `gorm:"primaryKey"` // Unique identifier for each user, serves as primary key
 	Name     string
 	Email    string
-	Username string `gorm:"unique"`
-	Password string // salt saulted with default cost
+	Username string `gorm:"unique"` // Unique username for login identification
+	Password string
 }
