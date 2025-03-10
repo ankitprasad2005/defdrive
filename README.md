@@ -15,7 +15,7 @@ Defdrive is a project that allows users to create multiple expiry keys based on 
 2. Create a `.env` file in the root directory. Take `.env.example` for reference.
 3. Ensure a PostgreSQL database is running on the specified port and set all necessary environment variables in the `.env` file.
 4. Run `go mod tidy` to install dependencies.
-5. Run `go run cmd/main.go` to start the server
+5. Run `go run main.go` to start the server
 
 ## Running with Docker Compose
 
