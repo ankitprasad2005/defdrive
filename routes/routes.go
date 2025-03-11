@@ -32,7 +32,7 @@ func SetupRouter(db *gorm.DB) *gin.Engine {
 			protected.POST("/upload", fileController.Upload)
 			protected.GET("/files", fileController.ListFiles)
 			protected.PUT("/files/:fileID/access", fileController.TogglePublicAccess)
-			protected.DELETE("/files/:fileID", fileController.DeleteFile) // New route for file deletion
+			protected.DELETE("/files/:fileID", fileController.DeleteFile)
 
 			// Access routes
 			protected.POST("/files/:fileID/accesses", accessController.CreateAccess)
