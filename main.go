@@ -47,7 +47,7 @@ func main() {
 		log.Fatalf("Failed to connect to database after %d attempts: %v", maxRetries, err)
 	}
 
-	// Auto migrate models
+	// Ensure the tables are created in the correct order
 	err = db.AutoMigrate(&models.User{}, &models.File{}, &models.Access{})
 	if err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)

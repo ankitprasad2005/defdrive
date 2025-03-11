@@ -48,7 +48,7 @@ func (fc *FileController) Upload(c *gin.Context) {
 	fileRecord := models.File{
 		Name:     file.Filename,
 		Location: storagePath,
-		OwnerID:  userID.(uint),
+		UserID:   userID.(uint),
 		Size:     file.Size,
 		Public:   false, // Default to private
 	}
@@ -73,7 +73,7 @@ func (fc *FileController) ListFiles(c *gin.Context) {
 	}
 
 	var files []models.File
-	result := fc.DB.Where("owner_id = ?", userID).Find(&files)
+	result := fc.DB.Where("user_id = ?", userID).Find(&files)
 	if result.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve files"})
 		return
@@ -103,7 +103,7 @@ func (fc *FileController) TogglePublicAccess(c *gin.Context) {
 	}
 
 	// Check if user owns the file
-	if file.OwnerID != userID.(uint) {
+	if file.UserID != userID.(uint) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "You don't have permission to modify this file"})
 		return
 	}
@@ -151,7 +151,7 @@ func (fc *FileController) DeleteFile(c *gin.Context) {
 	}
 
 	// Check if user owns the file
-	if file.OwnerID != userID.(uint) {
+	if file.UserID != userID.(uint) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "You don't have permission to delete this file"})
 		return
 	}

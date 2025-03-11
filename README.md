@@ -33,3 +33,8 @@ Defdrive is a project that allows users to create multiple expiry keys based on 
 - `POST /api/links`: Create a one-time use link.
 - `GET /api/links/:id`: Retrieve a specific link by ID.
 - `DELETE /api/links/:id`: Delete a specific link by ID.
+
+## Data Base (Models)
+<p align="center">
+ <img src=".github/files/db.png" alt="DB model" />
+</p>

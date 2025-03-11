@@ -3,6 +3,7 @@ package controllers
 import (
 	"defdrive/models"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -74,12 +75,12 @@ func (uc *UserController) Login(c *gin.Context) {
 
 	// Generate JWT token
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"userID":   user.UserID,
+		"userID":   user.ID,
 		"username": user.Username,
 		"exp":      time.Now().Add(time.Hour * 72).Unix(),
 	})
 
-	tokenString, err := token.SignedString([]byte("your-secret-key"))
+	tokenString, err := token.SignedString([]byte(os.Getenv("JWT_SECRET")))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
 		return
@@ -89,7 +90,7 @@ func (uc *UserController) Login(c *gin.Context) {
 		"message": "Login successful",
 		"token":   tokenString,
 		"user": gin.H{
-			"id":       user.UserID,
+			"id":       user.ID,
 			"username": user.Username,
 			"email":    user.Email,
 			"name":     user.Name,

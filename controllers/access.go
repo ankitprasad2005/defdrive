@@ -40,7 +40,7 @@ func (ac *AccessController) CreateAccess(c *gin.Context) {
 		return
 	}
 
-	if file.OwnerID != userID.(uint) {
+	if file.UserID != userID.(uint) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "You don't have permission to create access for this file"})
 		return
 	}
@@ -105,7 +105,7 @@ func (ac *AccessController) ListAccesses(c *gin.Context) {
 		return
 	}
 
-	if file.OwnerID != userID.(uint) {
+	if file.UserID != userID.(uint) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "You don't have permission to view accesses for this file"})
 		return
 	}
@@ -148,7 +148,7 @@ func (ac *AccessController) UpdateAccess(c *gin.Context) {
 		return
 	}
 
-	if file.OwnerID != userID.(uint) {
+	if file.UserID != userID.(uint) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "You don't have permission to update this access"})
 		return
 	}
@@ -213,7 +213,7 @@ func (ac *AccessController) DeleteAccess(c *gin.Context) {
 		return
 	}
 
-	if file.OwnerID != userID.(uint) {
+	if file.UserID != userID.(uint) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "You don't have permission to delete this access"})
 		return
 	}
