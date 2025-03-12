@@ -39,6 +39,9 @@ func SetupRouter(db *gorm.DB) *gin.Engine {
 			protected.GET("/files/:fileID/accesses", accessController.ListAccesses)
 			protected.PUT("/accesses/:accessID/access", accessController.UpdateAccess)
 			protected.DELETE("/accesses/:accessID", accessController.DeleteAccess)
+
+			// Apply access restrictions middleware
+			protected.Use(middleware.AccessRestrictions(db))
 		}
 	}
 

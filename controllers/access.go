@@ -67,11 +67,12 @@ func (ac *AccessController) CreateAccess(c *gin.Context) {
 
 		// Parse request body
 		var accessRequest struct {
-			Name    string `json:"name"`
-			Subnet  string `json:"subnet"`
-			IP      string `json:"ip"`
-			Expires string `json:"expires"`
-			Public  bool   `json:"public"`
+			Name       string `json:"name"`
+			Subnet     string `json:"subnet"`
+			IP         string `json:"ip"`
+			Expires    string `json:"expires"`
+			Public     bool   `json:"public"`
+			OneTimeUse bool   `json:"oneTimeUse"`
 		}
 
 		if err := c.ShouldBindJSON(&accessRequest); err != nil {
@@ -84,13 +85,14 @@ func (ac *AccessController) CreateAccess(c *gin.Context) {
 
 		// Create the access record
 		access := models.Access{
-			FileID:  uint(fileID),
-			Name:    accessRequest.Name,
-			Link:    link,
-			Subnet:  accessRequest.Subnet,
-			IP:      accessRequest.IP,
-			Expires: accessRequest.Expires,
-			Public:  accessRequest.Public,
+			FileID:     uint(fileID),
+			Name:       accessRequest.Name,
+			Link:       link,
+			Subnet:     accessRequest.Subnet,
+			IP:         accessRequest.IP,
+			Expires:    accessRequest.Expires,
+			Public:     accessRequest.Public,
+			OneTimeUse: accessRequest.OneTimeUse,
 		}
 
 		if result := ac.DB.Create(&access); result.Error != nil {
@@ -182,11 +184,12 @@ func (ac *AccessController) UpdateAccess(c *gin.Context) {
 
 		// Parse request body
 		var updateRequest struct {
-			Name    string `json:"name"`
-			Subnet  string `json:"subnet"`
-			IP      string `json:"ip"`
-			Expires string `json:"expires"`
-			Public  bool   `json:"public"`
+			Name       string `json:"name"`
+			Subnet     string `json:"subnet"`
+			IP         string `json:"ip"`
+			Expires    string `json:"expires"`
+			Public     bool   `json:"public"`
+			OneTimeUse bool   `json:"oneTimeUse"`
 		}
 
 		if err := c.ShouldBindJSON(&updateRequest); err != nil {
@@ -200,6 +203,7 @@ func (ac *AccessController) UpdateAccess(c *gin.Context) {
 		access.IP = updateRequest.IP
 		access.Expires = updateRequest.Expires
 		access.Public = updateRequest.Public
+		access.OneTimeUse = updateRequest.OneTimeUse
 
 		if err := ac.DB.Save(&access).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update access record"})

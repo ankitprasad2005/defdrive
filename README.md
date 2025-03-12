@@ -1,6 +1,6 @@
 # Defdrive
 
-Defdrive is a project that allows users to create multiple expiry keys based on time and has features like one-time use of the link or specific data traffic allowed.
+Defdrive is a project that allows users to create multiple expiry keys based on time and has features like one-time use of the link, specific data traffic allowed, subnet restriction, and public IP restriction.
 
 ## Features
 
@@ -8,6 +8,8 @@ Defdrive is a project that allows users to create multiple expiry keys based on 
 - Create and manage expiry keys
 - One-time use links
 - Data traffic control
+- Subnet restriction
+- Public IP restriction
 
 ## Setup
 
@@ -33,6 +35,8 @@ Defdrive is a project that allows users to create multiple expiry keys based on 
 - `POST /api/links`: Create a one-time use link.
 - `GET /api/links/:id`: Retrieve a specific link by ID.
 - `DELETE /api/links/:id`: Delete a specific link by ID.
+- `POST /api/accesses`: Create a new access record with optional one-time use, subnet restriction, and public IP restriction.
+- `PUT /api/accesses/:accessID`: Update an existing access record with optional one-time use, subnet restriction, and public IP restriction.
 
 ## Data Base (Models)
 <p align="center">

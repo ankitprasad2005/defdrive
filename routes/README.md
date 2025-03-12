@@ -263,7 +263,8 @@
   "subnet": "192.168.1.0/24",
   "ip": "192.168.1.1",
   "expires": "2025-12-31T23:59:59Z",
-  "public": true
+  "public": true,
+  "oneTimeUse": true
 }
 ```
 
@@ -369,7 +370,8 @@
   "subnet": "192.168.2.0/24",
   "ip": "192.168.2.1",
   "expires": "2026-12-31T23:59:59Z",
-  "public": false
+  "public": false,
+  "oneTimeUse": false
 }
 ```
 
