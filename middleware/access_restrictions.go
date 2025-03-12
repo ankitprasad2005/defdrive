@@ -40,21 +40,35 @@ func AccessRestrictions(db *gorm.DB) gin.HandlerFunc {
 		}
 
 		// Check subnet restriction
-		if access.Subnet != "" {
+		if len(access.Subnets) > 0 {
 			ip := c.ClientIP()
-			_, subnet, err := net.ParseCIDR(access.Subnet)
-			if err != nil || !subnet.Contains(net.ParseIP(ip)) {
-				c.JSON(http.StatusForbidden, gin.H{"error": "Access restricted to specific subnet"})
+			allowed := false
+			for _, subnet := range access.Subnets {
+				_, parsedSubnet, err := net.ParseCIDR(subnet)
+				if err == nil && parsedSubnet.Contains(net.ParseIP(ip)) {
+					allowed = true
+					break
+				}
+			}
+			if !allowed {
+				c.JSON(http.StatusForbidden, gin.H{"error": "Access restricted to specific subnets"})
 				c.Abort()
 				return
 			}
 		}
 
 		// Check public IP restriction
-		if access.IP != "" {
+		if len(access.IPs) > 0 {
 			ip := c.ClientIP()
-			if ip != access.IP {
-				c.JSON(http.StatusForbidden, gin.H{"error": "Access restricted to specific IP"})
+			allowed := false
+			for _, allowedIP := range access.IPs {
+				if ip == allowedIP {
+					allowed = true
+					break
+				}
+			}
+			if !allowed {
+				c.JSON(http.StatusForbidden, gin.H{"error": "Access restricted to specific IPs"})
 				c.Abort()
 				return
 			}

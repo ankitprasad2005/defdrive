@@ -260,8 +260,8 @@
 ```json
 {
   "name": "Access Name",
-  "subnet": "192.168.1.0/24",
-  "ip": "192.168.1.1",
+  "subnets": ["192.168.1.0/24", "10.0.0.0/8"],
+  "ips": ["192.168.1.1", "10.0.0.1"],
   "expires": "2025-12-31T23:59:59Z",
   "public": true,
   "oneTimeUse": true
@@ -277,8 +277,8 @@
       "ID": 1,
       "Name": "Access Name",
       "Link": "unique-access-link",
-      "Subnet": "192.168.1.0/24",
-      "IP": "192.168.1.1",
+      "Subnets": ["192.168.1.0/24", "10.0.0.0/8"],
+      "IPs": ["192.168.1.1", "10.0.0.1"],
       "Expires": "2025-12-31T23:59:59Z",
       "Public": true,
       "FileID": 1
@@ -327,8 +327,8 @@
         "ID": 1,
         "Name": "Access Name",
         "Link": "unique-access-link",
-        "Subnet": "192.168.1.0/24",
-        "IP": "192.168.1.1",
+        "Subnets": ["192.168.1.0/24", "10.0.0.0/8"],
+        "IPs": ["192.168.1.1", "10.0.0.1"],
         "Expires": "2025-12-31T23:59:59Z",
         "Public": true,
         "FileID": 1
@@ -367,8 +367,8 @@
 ```json
 {
   "name": "Updated Access Name",
-  "subnet": "192.168.2.0/24",
-  "ip": "192.168.2.1",
+  "subnets": ["192.168.2.0/24", "10.0.1.0/8"],
+  "ips": ["192.168.2.1", "10.0.1.1"],
   "expires": "2026-12-31T23:59:59Z",
   "public": false,
   "oneTimeUse": false
@@ -384,8 +384,8 @@
       "ID": 1,
       "Name": "Updated Access Name",
       "Link": "unique-access-link",
-      "Subnet": "192.168.2.0/24",
-      "IP": "192.168.2.1",
+      "Subnets": ["192.168.2.0/24", "10.0.1.0/8"],
+      "IPs": ["192.168.2.1", "10.0.1.1"],
       "Expires": "2026-12-31T23:59:59Z",
       "Public": false,
       "FileID": 1

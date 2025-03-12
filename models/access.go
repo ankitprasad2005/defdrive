@@ -7,9 +7,9 @@ import (
 type Access struct {
 	gorm.Model
 	Name       string
-	Link       string `gorm:"uniqueIndex"` // Unique index to ensure the link is unique
-	Subnet     string
-	IP         string
+	Link       string   `gorm:"uniqueIndex"` // Unique index to ensure the link is unique
+	Subnets    []string `gorm:"type:text[]"` // Array of subnets
+	IPs        []string `gorm:"type:text[]"` // Array of IPs
 	Expires    string
 	Public     bool `gorm:"default:false"` // Flag indicating if access is public or restricted
 	OneTimeUse bool `gorm:"default:false"` // Flag indicating if the link is one-time use

@@ -67,12 +67,12 @@ func (ac *AccessController) CreateAccess(c *gin.Context) {
 
 		// Parse request body
 		var accessRequest struct {
-			Name       string `json:"name"`
-			Subnet     string `json:"subnet"`
-			IP         string `json:"ip"`
-			Expires    string `json:"expires"`
-			Public     bool   `json:"public"`
-			OneTimeUse bool   `json:"oneTimeUse"`
+			Name       string   `json:"name"`
+			Subnets    []string `json:"subnets"`
+			IPs        []string `json:"ips"`
+			Expires    string   `json:"expires"`
+			Public     bool     `json:"public"`
+			OneTimeUse bool     `json:"oneTimeUse"`
 		}
 
 		if err := c.ShouldBindJSON(&accessRequest); err != nil {
@@ -88,8 +88,8 @@ func (ac *AccessController) CreateAccess(c *gin.Context) {
 			FileID:     uint(fileID),
 			Name:       accessRequest.Name,
 			Link:       link,
-			Subnet:     accessRequest.Subnet,
-			IP:         accessRequest.IP,
+			Subnets:    accessRequest.Subnets,
+			IPs:        accessRequest.IPs,
 			Expires:    accessRequest.Expires,
 			Public:     accessRequest.Public,
 			OneTimeUse: accessRequest.OneTimeUse,
@@ -184,12 +184,12 @@ func (ac *AccessController) UpdateAccess(c *gin.Context) {
 
 		// Parse request body
 		var updateRequest struct {
-			Name       string `json:"name"`
-			Subnet     string `json:"subnet"`
-			IP         string `json:"ip"`
-			Expires    string `json:"expires"`
-			Public     bool   `json:"public"`
-			OneTimeUse bool   `json:"oneTimeUse"`
+			Name       string   `json:"name"`
+			Subnets    []string `json:"subnets"`
+			IPs        []string `json:"ips"`
+			Expires    string   `json:"expires"`
+			Public     bool     `json:"public"`
+			OneTimeUse bool     `json:"oneTimeUse"`
 		}
 
 		if err := c.ShouldBindJSON(&updateRequest); err != nil {
@@ -199,8 +199,8 @@ func (ac *AccessController) UpdateAccess(c *gin.Context) {
 
 		// Update the access record
 		access.Name = updateRequest.Name
-		access.Subnet = updateRequest.Subnet
-		access.IP = updateRequest.IP
+		access.Subnets = updateRequest.Subnets
+		access.IPs = updateRequest.IPs
 		access.Expires = updateRequest.Expires
 		access.Public = updateRequest.Public
 		access.OneTimeUse = updateRequest.OneTimeUse
