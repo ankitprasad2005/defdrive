@@ -7,7 +7,7 @@ import (
 type Access struct {
 	gorm.Model
 	Name    string
-	Link    string
+	Link    string `gorm:"uniqueIndex"` // Unique index to ensure the link is unique
 	Subnet  string
 	IP      string
 	Expires string

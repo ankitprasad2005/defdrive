@@ -1,9 +1,13 @@
 package controllers
 
 import (
+	"crypto/md5"
 	"defdrive/models"
+	"encoding/hex"
 	"net/http"
+	"os"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -17,6 +21,21 @@ type AccessController struct {
 // NewAccessController creates a new access controller
 func NewAccessController(db *gorm.DB) *AccessController {
 	return &AccessController{DB: db}
+}
+
+// generateRandomLink generates a random link that looks like an MD5 hash
+func (ac *AccessController) generateRandomLink() string {
+	for {
+		hash := md5.New()
+		hash.Write([]byte(uuid.New().String() + time.Now().String()))
+		link := hex.EncodeToString(hash.Sum(nil)) // MD5 generates a 32-character hash
+
+		// Check if the link already exists in the database
+		var access models.Access
+		if err := ac.DB.Where("link = ?", link).First(&access).Error; err == gorm.ErrRecordNotFound {
+			return link
+		}
+	}
 }
 
 // CreateAccess generates a new access record for a file
@@ -60,7 +79,7 @@ func (ac *AccessController) CreateAccess(c *gin.Context) {
 	}
 
 	// Generate a unique access link
-	link := uuid.New().String()
+	link := ac.generateRandomLink()
 
 	// Create the access record
 	access := models.Access{
@@ -78,9 +97,12 @@ func (ac *AccessController) CreateAccess(c *gin.Context) {
 		return
 	}
 
+	hostURL := os.Getenv("HOST_URL")
+
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Access created successfully",
 		"access":  access,
+		"link":    hostURL + "/" + link,
 	})
 }
 
