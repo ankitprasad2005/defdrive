@@ -89,6 +89,8 @@
 
 **Request:**
 - Form-data with file field
+- Query parameters:
+  - `public` (boolean): Whether the file should be public or not (default: false)
 
 **Response:**
 - Success (200):
@@ -358,7 +360,7 @@
   }
   ```
 
-### PUT /api/accesses/:accessID
+### PUT /api/accesses/:accessID/access
 
 **Request:**
 ```json

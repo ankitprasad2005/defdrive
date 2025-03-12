@@ -37,7 +37,7 @@ func SetupRouter(db *gorm.DB) *gin.Engine {
 			// Access routes
 			protected.POST("/files/:fileID/accesses", accessController.CreateAccess)
 			protected.GET("/files/:fileID/accesses", accessController.ListAccesses)
-			protected.PUT("/accesses/:accessID", accessController.UpdateAccess)
+			protected.PUT("/accesses/:accessID/access", accessController.UpdateAccess)
 			protected.DELETE("/accesses/:accessID", accessController.DeleteAccess)
 		}
 	}
