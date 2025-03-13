@@ -2,9 +2,11 @@ package middleware
 
 import (
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v4"
 )
 
 // AuthRequired is a middleware to authenticate requests
@@ -27,21 +29,31 @@ func AuthRequired() gin.HandlerFunc {
 		}
 
 		// Extract the token
-		token := headerParts[1]
+		tokenString := headerParts[1]
 
-		// In a real application, verify the JWT token here
-		// For now, we'll use a dummy token validation and user ID extraction
+		// Parse and validate the token
+		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+			// Ensure the token method conforms to "SigningMethodHMAC"
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, jwt.NewValidationError("unexpected signing method", jwt.ValidationErrorSignatureInvalid)
+			}
+			return []byte(os.Getenv("JWT_SECRET")), nil
+		})
 
-		// Dummy validation - in a real app you would verify the JWT
-		if token == "invalid-token" {
+		if err != nil || !token.Valid {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
 			c.Abort()
 			return
 		}
 
-		// Set user ID in context - in a real app this would come from the JWT claims
-		// This is a placeholder - replace with actual JWT validation logic
-		c.Set("userID", uint(1)) // Example user ID
+		// Extract user ID from token claims
+		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+			c.Set("userID", uint(claims["userID"].(float64)))
+		} else {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token claims"})
+			c.Abort()
+			return
+		}
 
 		c.Next()
 	}
