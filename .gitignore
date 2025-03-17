@@ -4,7 +4,6 @@
 .venv/
 
 # go things
-go.sum
 
 # for dev test
 db_data/
