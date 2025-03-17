@@ -73,6 +73,8 @@ func (ac *AccessController) CreateAccess(c *gin.Context) {
 			Expires    string   `json:"expires"`
 			Public     bool     `json:"public"`
 			OneTimeUse bool     `json:"oneTimeUse"`
+			TTL        int      `json:"ttl"`
+			EnableTTL  bool     `json:"enableTTL"`
 		}
 
 		if err := c.ShouldBindJSON(&accessRequest); err != nil {
@@ -93,6 +95,8 @@ func (ac *AccessController) CreateAccess(c *gin.Context) {
 			Expires:    accessRequest.Expires,
 			Public:     accessRequest.Public,
 			OneTimeUse: accessRequest.OneTimeUse,
+			TTL:        accessRequest.TTL,
+			EnableTTL:  accessRequest.EnableTTL,
 		}
 
 		if result := ac.DB.Create(&access); result.Error != nil {
@@ -190,6 +194,8 @@ func (ac *AccessController) UpdateAccess(c *gin.Context) {
 			Expires    string   `json:"expires"`
 			Public     bool     `json:"public"`
 			OneTimeUse bool     `json:"oneTimeUse"`
+			TTL        int      `json:"ttl"`
+			EnableTTL  bool     `json:"enableTTL"`
 		}
 
 		if err := c.ShouldBindJSON(&updateRequest); err != nil {
@@ -204,6 +210,8 @@ func (ac *AccessController) UpdateAccess(c *gin.Context) {
 		access.Expires = updateRequest.Expires
 		access.Public = updateRequest.Public
 		access.OneTimeUse = updateRequest.OneTimeUse
+		access.TTL = updateRequest.TTL
+		access.EnableTTL = updateRequest.EnableTTL
 
 		if err := ac.DB.Save(&access).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update access record"})

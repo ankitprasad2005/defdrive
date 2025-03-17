@@ -264,7 +264,9 @@
   "ips": ["192.168.1.1", "10.0.0.1"],
   "expires": "2025-12-31T23:59:59Z",
   "public": true,
-  "oneTimeUse": true
+  "oneTimeUse": true,
+  "ttl": 5,
+  "enableTTL": true
 }
 ```
 
@@ -281,7 +283,9 @@
       "IPs": ["192.168.1.1", "10.0.0.1"],
       "Expires": "2025-12-31T23:59:59Z",
       "Public": true,
-      "FileID": 1
+      "FileID": 1,
+      "TTL": 5,
+      "EnableTTL": true
     }
   }
   ```
@@ -371,7 +375,9 @@
   "ips": ["192.168.2.1", "10.0.1.1"],
   "expires": "2026-12-31T23:59:59Z",
   "public": false,
-  "oneTimeUse": false
+  "oneTimeUse": false,
+  "ttl": 10,
+  "enableTTL": false
 }
 ```
 
@@ -388,7 +394,9 @@
       "IPs": ["192.168.2.1", "10.0.1.1"],
       "Expires": "2026-12-31T23:59:59Z",
       "Public": false,
-      "FileID": 1
+      "FileID": 1,
+      "TTL": 10,
+      "EnableTTL": false
     }
   }
   ```

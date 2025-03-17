@@ -1,6 +1,6 @@
 # Defdrive
 
-Defdrive is a project that allows users to create multiple expiry keys based on time and has features like one-time use of the link, specific data traffic allowed, subnet restriction, and public IP restriction.
+Defdrive is a project that allows users to create multiple expiry keys based on time and has features like one-time use of the link, specific data traffic allowed, subnet restriction, public IP restriction, and TTL (Time to Live).
 
 ## Features
 
@@ -10,6 +10,7 @@ Defdrive is a project that allows users to create multiple expiry keys based on 
 - Data traffic control
 - Subnet restriction
 - Public IP restriction
+- TTL (Time to Live)
 
 ## Setup
 

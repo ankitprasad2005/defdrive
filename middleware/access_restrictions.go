@@ -10,7 +10,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// AccessRestrictions middleware to handle link expiration, one-time use, subnet restriction, and public IP restriction
+// AccessRestrictions middleware to handle link expiration, one-time use, subnet restriction, public IP restriction, and TTL
 func AccessRestrictions(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		link := c.Param("link")
@@ -72,6 +72,17 @@ func AccessRestrictions(db *gorm.DB) gin.HandlerFunc {
 				c.Abort()
 				return
 			}
+		}
+
+		// Check TTL (Time to Live)
+		if access.EnableTTL && access.TTL > 0 {
+			access.TTL--
+			if access.TTL == 0 {
+				c.JSON(http.StatusForbidden, gin.H{"error": "Access link has reached its TTL limit"})
+				c.Abort()
+				return
+			}
+			db.Save(&access)
 		}
 
 		// Mark as used if one-time use
