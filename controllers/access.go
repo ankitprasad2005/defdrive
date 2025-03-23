@@ -40,7 +40,6 @@ func (ac *AccessController) generateRandomLink() string {
 
 // CreateAccess generates a new access record for a file
 func (ac *AccessController) CreateAccess(c *gin.Context) {
-	go func() {
 		userID, exists := c.Get("userID")
 		if !exists {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
@@ -111,12 +110,10 @@ func (ac *AccessController) CreateAccess(c *gin.Context) {
 			"access":  access,
 			"link":    hostURL + "/" + link,
 		})
-	}()
 }
 
 // ListAccesses returns all accesses for a file
 func (ac *AccessController) ListAccesses(c *gin.Context) {
-	go func() {
 		userID, exists := c.Get("userID")
 		if !exists {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
@@ -149,12 +146,10 @@ func (ac *AccessController) ListAccesses(c *gin.Context) {
 		}
 
 		c.JSON(http.StatusOK, gin.H{"accesses": accesses})
-	}()
 }
 
 // UpdateAccess modifies an existing access record
 func (ac *AccessController) UpdateAccess(c *gin.Context) {
-	go func() {
 		userID, exists := c.Get("userID")
 		if !exists {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
@@ -222,12 +217,10 @@ func (ac *AccessController) UpdateAccess(c *gin.Context) {
 			"message": "Access updated successfully",
 			"access":  access,
 		})
-	}()
 }
 
 // DeleteAccess removes an access record
 func (ac *AccessController) DeleteAccess(c *gin.Context) {
-	go func() {
 		userID, exists := c.Get("userID")
 		if !exists {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
@@ -266,5 +259,4 @@ func (ac *AccessController) DeleteAccess(c *gin.Context) {
 		}
 
 		c.JSON(http.StatusOK, gin.H{"message": "Access deleted successfully"})
-	}()
 }

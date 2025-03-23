@@ -21,7 +21,6 @@ func NewFileController(db *gorm.DB) *FileController {
 
 // Upload handles file uploads
 func (fc *FileController) Upload(c *gin.Context) {
-	go func() {
 		// Get current user ID from context (set by auth middleware)
 		userID, exists := c.Get("userID")
 		if !exists {
@@ -63,12 +62,10 @@ func (fc *FileController) Upload(c *gin.Context) {
 			"message": "File uploaded successfully",
 			"file":    fileRecord,
 		})
-	}()
 }
 
 // ListFiles returns all files belonging to the current user
 func (fc *FileController) ListFiles(c *gin.Context) {
-	go func() {
 		userID, exists := c.Get("userID")
 		if !exists {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
@@ -83,12 +80,10 @@ func (fc *FileController) ListFiles(c *gin.Context) {
 		}
 
 		c.JSON(http.StatusOK, gin.H{"files": files})
-	}()
 }
 
 // TogglePublicAccess changes the public status of a file
 func (fc *FileController) TogglePublicAccess(c *gin.Context) {
-	go func() {
 		userID, exists := c.Get("userID")
 		if !exists {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
@@ -133,12 +128,10 @@ func (fc *FileController) TogglePublicAccess(c *gin.Context) {
 			"message": "File access updated successfully",
 			"file":    file,
 		})
-	}()
 }
 
 // DeleteFile removes a file from the system
 func (fc *FileController) DeleteFile(c *gin.Context) {
-	go func() {
 		userID, exists := c.Get("userID")
 		if !exists {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
@@ -179,5 +172,4 @@ func (fc *FileController) DeleteFile(c *gin.Context) {
 		// os.Remove(file.Location)
 
 		c.JSON(http.StatusOK, gin.H{"message": "File deleted successfully"})
-	}()
 }

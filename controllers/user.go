@@ -23,7 +23,6 @@ func NewUserController(db *gorm.DB) *UserController {
 
 // SignUp handles user registration
 func (uc *UserController) SignUp(c *gin.Context) {
-	go func() {
 		var user models.User
 		if err := c.ShouldBindJSON(&user); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -48,12 +47,10 @@ func (uc *UserController) SignUp(c *gin.Context) {
 		// Don't return the password in the response
 		user.Password = ""
 		c.JSON(http.StatusOK, gin.H{"message": "User created successfully", "user": user})
-	}()
 }
 
 // Login authenticates a user
 func (uc *UserController) Login(c *gin.Context) {
-	go func() {
 		var loginRequest struct {
 			Username string `json:"username" binding:"required"`
 			Password string `json:"password" binding:"required"`
@@ -99,5 +96,4 @@ func (uc *UserController) Login(c *gin.Context) {
 				"name":     user.Name,
 			},
 		})
-	}()
 }
