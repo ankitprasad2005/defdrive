@@ -4,6 +4,7 @@ import (
 	"defdrive/controllers"
 	"defdrive/middleware"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -11,6 +12,9 @@ import (
 // SetupRouter configures all application routes
 func SetupRouter(db *gorm.DB) *gin.Engine {
 	router := gin.Default()
+
+	// Add CORS middleware
+	router.Use(cors.Default())
 
 	// Create controllers
 	userController := controllers.NewUserController(db)
