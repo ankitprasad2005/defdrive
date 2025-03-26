@@ -20,6 +20,7 @@ func SetupRouter(db *gorm.DB) *gin.Engine {
 	userController := controllers.NewUserController(db)
 	fileController := controllers.NewFileController(db)
 	accessController := controllers.NewAccessController(db)
+	linkController := controllers.NewLinkController(db)
 
 	// Group API routes
 	api := router.Group("/api")
@@ -48,6 +49,9 @@ func SetupRouter(db *gorm.DB) *gin.Engine {
 			protected.Use(middleware.AccessRestrictions(db))
 		}
 	}
+
+	// Public access link route
+	router.GET("/link/:hash", linkController.HandleAccessLink)
 
 	return router
 }
