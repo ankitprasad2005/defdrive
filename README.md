@@ -37,6 +37,7 @@ Defdrive is a project that allows users to create multiple expiry keys based on 
 - `DELETE /api/files/:fileID`: Delete a file.
 - `POST /api/files/:fileID/accesses`: Create a new access record for a file.
 - `GET /api/files/:fileID/accesses`: Retrieve all access records for a file.
+- `GET /api/accesses/:accessID`: Retrieve details of a specific access record.
 - `PUT /api/accesses/:accessID/access`: Update an access record.
 - `DELETE /api/accesses/:accessID`: Delete an access record.
 - `GET /link/:hash`: Access a file using a public link.

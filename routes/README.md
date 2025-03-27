@@ -469,6 +469,51 @@
   }
   ```
 
+### GET /api/accesses/:accessID
+
+**Response:**
+- Success (200):
+  ```json
+  {
+    "access": {
+      "ID": 1,
+      "Name": "Access Name",
+      "Link": "unique-access-link",
+      "Subnets": ["192.168.1.0/24", "10.0.0.0/8"],
+      "IPs": ["192.168.1.1", "10.0.0.1"],
+      "Expires": "2025-12-31T23:59:59Z",
+      "Public": true,
+      "FileID": 1,
+      "TTL": 5,
+      "EnableTTL": true
+    }
+  }
+  ```
+- Error (401):
+  ```json
+  {
+    "error": "User not authenticated"
+  }
+  ```
+- Error (403):
+  ```json
+  {
+    "error": "You don't have permission to view this access"
+  }
+  ```
+- Error (404):
+  ```json
+  {
+    "error": "Access record not found"
+  }
+  ```
+- Error (500):
+  ```json
+  {
+    "error": "Failed to retrieve access record"
+  }
+  ```
+
 ### GET /link/:hash
 
 **Response:**
