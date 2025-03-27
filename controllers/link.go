@@ -30,6 +30,25 @@ func (lc *LinkController) HandleAccessLink(c *gin.Context) {
 		return
 	}
 
+	// Fetch the file details
+	var file models.File
+	if err := lc.DB.Where("id = ?", access.FileID).First(&file).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "File not found"})
+		return
+	}
+
+	// Check if the file is public
+	if !file.Public {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied. File is not public"})
+		return
+	}
+
+	// Check if the access is public
+	if !access.Public {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied. Link is not public"})
+		return
+	}
+
 	// Check access restrictions
 	if access.Expires != "" {
 		expiryTime, err := time.Parse(time.RFC3339, access.Expires)
@@ -48,13 +67,6 @@ func (lc *LinkController) HandleAccessLink(c *gin.Context) {
 	if access.OneTimeUse {
 		access.Used = true
 		lc.DB.Save(&access)
-	}
-
-	// Fetch the file details
-	var file models.File
-	if err := lc.DB.Where("id = ?", access.FileID).First(&file).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "File not found"})
-		return
 	}
 
 	// Serve the file as a download using the Location field
