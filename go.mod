@@ -5,12 +5,10 @@ go 1.24.1
 require (
 	github.com/charmbracelet/bubbletea v1.3.4
 	github.com/charmbracelet/lipgloss v1.0.0
-	github.com/gin-contrib/cors v1.7.4
 	github.com/gin-gonic/gin v1.10.0
 	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
-	github.com/olekukonko/tablewriter v0.0.5
 	golang.org/x/crypto v0.36.0
 	gorm.io/driver/postgres v1.5.11
 	gorm.io/gorm v1.25.12
@@ -52,6 +50,7 @@ require (
 	github.com/muesli/termenv v0.15.2 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.3 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
+	github.com/rogpeppe/go-internal v1.8.0 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.12 // indirect
 	golang.org/x/arch v0.12.0 // indirect
