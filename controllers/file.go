@@ -3,9 +3,9 @@ package controllers
 import (
 	"defdrive/models"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strconv"
-	"os"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -37,7 +37,7 @@ func (fc *FileController) Upload(c *gin.Context) {
 	}
 
 	// Generate storage path
-	storagePath := filepath.Join("uploads", filepath.Base(file.Filename))
+	storagePath := filepath.Join("/app/data/uploads", filepath.Base(file.Filename))
 
 	// Save file to disk
 	if err := c.SaveUploadedFile(file, storagePath); err != nil {
@@ -172,10 +172,10 @@ func (fc *FileController) DeleteFile(c *gin.Context) {
 	// In a production system, you would also delete the physical file here
 	// os.Remove(file.Location)
 	// Delete the physical file from the host system
-    if err := os.Remove(file.Location); err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete the physical file"})
-        return
-    }
+	if err := os.Remove(file.Location); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete the physical file"})
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "File deleted successfully"})
 }

@@ -3,6 +3,7 @@ package controllers
 import (
 	"defdrive/models"
 	"net/http"
+	"path/filepath"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -57,5 +58,5 @@ func (lc *LinkController) HandleAccessLink(c *gin.Context) {
 	}
 
 	// Serve the file as a download using the Location field
-	c.FileAttachment(file.Location, file.Name)
+	c.FileAttachment(filepath.Join("/app/data/uploads", filepath.Base(file.Location)), file.Name)
 }
