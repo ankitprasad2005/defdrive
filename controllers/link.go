@@ -82,7 +82,7 @@ func (lc *LinkController) HandleAccessLink(c *gin.Context) {
 		return
 	}
 
-	// Check access restrictions
+	// Check access expiration
 	if access.Expires != "" {
 		expiryTime, err := time.Parse(time.RFC3339, access.Expires)
 		if err != nil || time.Now().After(expiryTime) {
@@ -91,6 +91,7 @@ func (lc *LinkController) HandleAccessLink(c *gin.Context) {
 		}
 	}
 
+	// Check one-time use restriction
 	if access.OneTimeUse && access.Used {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Access link has already been used"})
 		return
