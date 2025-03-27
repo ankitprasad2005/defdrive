@@ -49,9 +49,13 @@ func (lc *LinkController) HandleAccessLink(c *gin.Context) {
 		lc.DB.Save(&access)
 	}
 
-	// Return success response
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Access granted",
-		"fileID":  access.FileID,
-	})
+	// Fetch the file details
+	var file models.File
+	if err := lc.DB.Where("id = ?", access.FileID).First(&file).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "File not found"})
+		return
+	}
+
+	// Serve the file as a download using the Location field
+	c.FileAttachment(file.Location, file.Name)
 }

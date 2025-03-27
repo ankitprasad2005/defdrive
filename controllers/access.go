@@ -148,6 +148,42 @@ func (ac *AccessController) ListAccesses(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"accesses": accesses})
 }
 
+// GetAccess retrieves the details of a specific access record
+func (ac *AccessController) GetAccess(c *gin.Context) {
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	accessID, err := strconv.ParseUint(c.Param("accessID"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid access ID"})
+		return
+	}
+
+	// Find the access record and associated file
+	var access models.Access
+	if err := ac.DB.First(&access, uint(accessID)).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Access record not found"})
+		return
+	}
+
+	var file models.File
+	if err := ac.DB.First(&file, access.FileID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "File not found"})
+		return
+	}
+
+	// Check if the user owns the file
+	if file.UserID != userID.(uint) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "You don't have permission to view this access"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"access": access})
+}
+
 // UpdateAccess modifies an existing access record
 func (ac *AccessController) UpdateAccess(c *gin.Context) {
 	userID, exists := c.Get("userID")
