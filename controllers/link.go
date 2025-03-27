@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"defdrive/models"
+	"net"
 	"net/http"
 	"path/filepath"
 	"time"
@@ -46,6 +47,38 @@ func (lc *LinkController) HandleAccessLink(c *gin.Context) {
 	// Check if the access is public
 	if !access.Public {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied. Link is not public"})
+		return
+	}
+
+	// Check IP filtering
+	clientIP := c.ClientIP()
+	ipAllowed := false
+	for _, ip := range access.IPs {
+		if clientIP == ip {
+			ipAllowed = true
+			break
+		}
+	}
+	if len(access.IPs) > 0 && !ipAllowed {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied. IP not allowed"})
+		return
+	}
+
+	// Check subnet filtering
+	subnetAllowed := false
+	clientIPParsed := net.ParseIP(clientIP)
+	for _, subnet := range access.Subnets {
+		_, cidr, err := net.ParseCIDR(subnet)
+		if err != nil {
+			continue // Skip invalid subnets
+		}
+		if cidr.Contains(clientIPParsed) {
+			subnetAllowed = true
+			break
+		}
+	}
+	if len(access.Subnets) > 0 && !subnetAllowed {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied. Subnet not allowed"})
 		return
 	}
 
