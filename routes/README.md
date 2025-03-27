@@ -88,9 +88,7 @@
 ### POST /api/upload
 
 **Request:**
-- Form-data with file field
-- Query parameters:
-  - `public` (boolean): Whether the file should be public or not (default: false)
+- Form-data with a `file` field.
 
 **Response:**
 - Success (200):
@@ -468,5 +466,28 @@
   ```json
   {
     "error": "Failed to delete access record"
+  }
+  ```
+
+### GET /link/:hash
+
+**Response:**
+- Success (200):
+  ```json
+  {
+    "message": "Access granted",
+    "fileID": 1
+  }
+  ```
+- Error (404):
+  ```json
+  {
+    "error": "Access link not found"
+  }
+  ```
+- Error (403):
+  ```json
+  {
+    "error": "Access link has expired or is invalid"
   }
   ```

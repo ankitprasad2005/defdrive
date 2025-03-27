@@ -9,3 +9,6 @@
 db_data/
 data/
 archieve/
+
+# for defdrive cli
+.defdrive_credentials
