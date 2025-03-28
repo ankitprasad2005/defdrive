@@ -25,10 +25,25 @@ func AccessRestrictions(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		if !checkExpiration(access, c) ||
-			!checkOneTimeUse(access, c) ||
-			!checkSubnetRestriction(access, c) ||
+		// Check if the access corresponds to a file
+		var file models.File
+		if err := db.Where("id = ?", access.FileID).First(&file).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "File not found"})
+			c.Abort()
+			return
+		}
+
+		// Return an error if neither the file nor the access is public
+		if !file.Public && !access.Public {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Access denied: neither the file nor the access is public"})
+			c.Abort()
+			return
+		}
+
+		// Check subnet, IP, one-time use, and TTL restrictions
+		if !checkSubnetRestriction(access, c) ||
 			!checkIPRestriction(access, c) ||
+			!checkOneTimeUse(access, c) ||
 			!checkTTL(access, db, c) {
 			return
 		}

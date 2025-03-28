@@ -3,6 +3,7 @@ package routes
 import (
 	"defdrive/controllers"
 	"defdrive/middleware"
+	"net/http"
 
 	// "github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -51,6 +52,11 @@ func SetupRouter(db *gorm.DB) *gin.Engine {
 
 	// Public access link route with access restrictions middleware
 	router.GET("/link/:hash", middleware.AccessRestrictions(db), linkController.HandleAccessLink)
+
+	// Health check route
+	router.GET("/api/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
 
 	return router
 }
