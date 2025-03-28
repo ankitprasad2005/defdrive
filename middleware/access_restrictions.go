@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"defdrive/models"
-	"fmt"
 	"net"
 	"net/http"
 	"time"
