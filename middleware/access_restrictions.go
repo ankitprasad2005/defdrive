@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"defdrive/models"
+	"fmt"
 	"net"
 	"net/http"
 	"time"
@@ -34,7 +35,7 @@ func AccessRestrictions(db *gorm.DB) gin.HandlerFunc {
 		}
 
 		// Return an error if neither the file nor the access is public
-		if !file.Public && !access.Public {
+		if !(file.Public && access.Public) {
 			c.JSON(http.StatusForbidden, gin.H{"error": "Access denied: neither the file nor the access is public"})
 			c.Abort()
 			return
@@ -44,7 +45,8 @@ func AccessRestrictions(db *gorm.DB) gin.HandlerFunc {
 		if !checkSubnetRestriction(access, c) ||
 			!checkIPRestriction(access, c) ||
 			!checkOneTimeUse(access, c) ||
-			!checkTTL(access, db, c) {
+			!checkTTL(access, db, c) ||
+			!checkExpiration(access, c) {
 			return
 		}
 
