@@ -35,7 +35,7 @@ func AccessRestrictions(db *gorm.DB) gin.HandlerFunc {
 
 		// Return an error if neither the file nor the access is public
 		if !(file.Public && access.Public) {
-			c.JSON(http.StatusForbidden, gin.H{"error": "Access denied: neither the file nor the access is public"})
+			c.JSON(http.StatusForbidden, gin.H{"error": "Access denied: file or access is not public"})
 			c.Abort()
 			return
 		}
