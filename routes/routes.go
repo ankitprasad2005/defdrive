@@ -51,8 +51,8 @@ func SetupRouter(db *gorm.DB) *gin.Engine {
 	}
 
 	// Public access link route with access restrictions middleware
-	// router.GET("/link/:hash", middleware.AccessRestrictions(db), linkController.HandleAccessLink)
-	router.GET("/link/:hash", linkController.HandleAccessLink)
+	router.GET("/link/:hash", middleware.AccessRestrictions(db), linkController.HandleAccessLink)
+	// router.GET("/link/:hash", linkController.HandleAccessLink)
 
 	// Health check route
 	router.GET("/api/health", func(c *gin.Context) {
