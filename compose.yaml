@@ -26,8 +26,9 @@ services:
     restart: unless-stopped
 
   db:
-    image: postgres:14
-    # user: ${UID}:${GID}
+    image: postgres:latest
+    user: 999:999
+    restart: unless-stopped
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
@@ -43,6 +44,25 @@ services:
     ports:
       - ${DB_PORT}:5432
 
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    ports:
+      - "${MINIO_PORT}:9000"  # API port
+      - "${MINIO_CONSOLE_PORT}:9001"  # Console port
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      # - minio_data:/data
+      - ${MINIO_DATA}:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
   # admin_db:
   #   image: nocodb/nocodb:latest
   #   environment:
@@ -54,5 +74,3 @@ services:
   #   depends_on:
   #     - db
 
-volumes:
-  db_data: {}

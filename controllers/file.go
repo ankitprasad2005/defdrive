@@ -36,19 +36,40 @@ func (fc *FileController) Upload(c *gin.Context) {
 		return
 	}
 
-	// Generate storage path
-	storagePath := filepath.Join("/app/data/uploads", filepath.Base(file.Filename))
+	// Get username from database
+	var user models.User
+	if err := fc.DB.First(&user, userID).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user information"})
+		return
+	}
+
+	// Create user directory if it doesn't exist
+	userDir := filepath.Join("/app/data/uploads", user.Username)
+	if err := os.MkdirAll(userDir, 0755); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user directory"})
+		return
+	}
+
+	// Check if file already exists
+	filePath := filepath.Join(userDir, filepath.Base(file.Filename))
+	if _, err := os.Stat(filePath); err == nil {
+		c.JSON(http.StatusConflict, gin.H{"error": "A file with this name already exists in your folder"})
+		return
+	}
 
 	// Save file to disk
-	if err := c.SaveUploadedFile(file, storagePath); err != nil {
+	if err := c.SaveUploadedFile(file, filePath); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
 		return
 	}
 
+	// Store only the relative path (username/filename) in the database
+	relativePath := filepath.Join(user.Username, filepath.Base(file.Filename))
+
 	// Create file record in database
 	fileRecord := models.File{
 		Name:     file.Filename,
-		Location: storagePath,
+		Location: relativePath,
 		UserID:   userID.(uint),
 		Size:     file.Size,
 		Public:   false, // Default to private
@@ -163,16 +184,17 @@ func (fc *FileController) DeleteFile(c *gin.Context) {
 		return
 	}
 
+	// Reconstruct the full file path to delete the physical file
+	fullPath := filepath.Join("/app/data/uploads", file.Location)
+
 	// Delete the file record
 	if err := fc.DB.Delete(&file).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete file record"})
 		return
 	}
 
-	// In a production system, you would also delete the physical file here
-	// os.Remove(file.Location)
 	// Delete the physical file from the host system
-	if err := os.Remove(file.Location); err != nil {
+	if err := os.Remove(fullPath); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete the physical file"})
 		return
 	}
