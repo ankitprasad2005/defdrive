@@ -5,6 +5,7 @@ import (
 	// "net"
 	"net/http"
 	"path/filepath"
+
 	// "time"
 
 	"github.com/gin-gonic/gin"
@@ -31,9 +32,9 @@ func (lc *LinkController) HandleAccessLink(c *gin.Context) {
 		return
 	}
 
-	// Fetch the file details
+	// Fetch the file details with user information
 	var file models.File
-	if err := lc.DB.Where("id = ?", access.FileID).First(&file).Error; err != nil {
+	if err := lc.DB.Preload("User").Where("id = ?", access.FileID).First(&file).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "File not found"})
 		return
 	}
@@ -104,6 +105,7 @@ func (lc *LinkController) HandleAccessLink(c *gin.Context) {
 	// 	lc.DB.Save(&access)
 	// }
 
-	// Serve the file as a download using the Location field
-	c.FileAttachment(filepath.Join("/app/data/uploads", filepath.Base(file.Location)), file.Name)
+	// Serve the file as a download using the Location field with username in path
+	filePath := filepath.Join("/app/data/uploads", file.User.Username, filepath.Base(file.Location))
+	c.FileAttachment(filePath, file.Name)
 }
