@@ -43,6 +43,41 @@ func (fc *FileController) Upload(c *gin.Context) {
 		return
 	}
 
+	// Check current file count
+	var currentFileCount int64
+	if err := fc.DB.Model(&models.File{}).Where("user_id = ?", userID).Count(&currentFileCount).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check current file count"})
+		return
+	}
+
+	// Check file limit
+	if currentFileCount >= int64(user.MaxFiles) {
+		c.JSON(http.StatusForbidden, gin.H{
+			"error":         "File limit exceeded",
+			"current_files": currentFileCount,
+			"max_files":     user.MaxFiles,
+		})
+		return
+	}
+
+	// Check current storage usage
+	var currentStorage int64
+	if err := fc.DB.Model(&models.File{}).Where("user_id = ?", userID).Select("COALESCE(SUM(size), 0)").Scan(&currentStorage).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check current storage usage"})
+		return
+	}
+
+	// Check storage limit
+	if currentStorage+file.Size > user.MaxStorage {
+		c.JSON(http.StatusForbidden, gin.H{
+			"error":           "Storage limit exceeded",
+			"current_storage": currentStorage,
+			"max_storage":     user.MaxStorage,
+			"file_size":       file.Size,
+		})
+		return
+	}
+
 	// Create user directory if it doesn't exist
 	userDir := filepath.Join("/app/data/uploads", user.Username)
 	if err := os.MkdirAll(userDir, 0755); err != nil {
@@ -200,4 +235,57 @@ func (fc *FileController) DeleteFile(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "File deleted successfully"})
+}
+
+// GetUserStats returns file count and storage usage for the current user
+func (fc *FileController) GetUserStats(c *gin.Context) {
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	// Get current file count
+	var fileCount int64
+	if err := fc.DB.Model(&models.File{}).Where("user_id = ?", userID).Count(&fileCount).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get file count"})
+		return
+	}
+
+	// Get current storage usage
+	var totalSize int64
+	if err := fc.DB.Model(&models.File{}).Where("user_id = ?", userID).Select("COALESCE(SUM(size), 0)").Scan(&totalSize).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get storage usage"})
+		return
+	}
+
+	// Get file type breakdown
+	var fileStats []struct {
+		Extension string `json:"extension"`
+		Count     int64  `json:"count"`
+		TotalSize int64  `json:"total_size"`
+	}
+
+	if err := fc.DB.Raw(`
+		SELECT 
+			CASE 
+				WHEN name ~ '\.' THEN LOWER(RIGHT(name, LENGTH(name) - POSITION('.' IN REVERSE(name))))
+				ELSE 'no_extension'
+			END as extension,
+			COUNT(*) as count,
+			COALESCE(SUM(size), 0) as total_size
+		FROM files 
+		WHERE user_id = ? AND deleted_at IS NULL
+		GROUP BY extension
+		ORDER BY total_size DESC
+	`, userID).Scan(&fileStats).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get file statistics"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"file_count":    fileCount,
+		"total_storage": totalSize,
+		"file_types":    fileStats,
+	})
 }

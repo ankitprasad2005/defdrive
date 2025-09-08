@@ -10,10 +10,10 @@ type File struct {
 	Location string
 	Size     int64
 	Hash     string
-	Public   bool `gorm:"default:false"`                   // Flag indicating if file is publicly accessible
+	Public   bool `gorm:"default:false"`
 	
-	UserID   uint `gorm:"index"`                           // Foreign key linking to the User who owns this file, indexed for performance
-	User     User `gorm:"foreignKey:UserID;references:ID"` // Relationship to User model
+	UserID   uint `gorm:"index"`
+	User     User `gorm:"foreignKey:UserID;references:ID"`
 	
 	Accesses []Access `gorm:"foreignKey:FileID;references:ID"` // One-to-many relationship with Access model
 }

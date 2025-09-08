@@ -35,9 +35,13 @@ func SetupRouter(db *gorm.DB) *gin.Engine {
 		protected := api.Group("")
 		protected.Use(middleware.AuthRequired())
 		{
+			// User limit routes
+			protected.GET("/user/limits", userController.GetUserLimits)
+
 			// File routes
 			protected.POST("/upload", fileController.Upload)
 			protected.GET("/files", fileController.ListFiles)
+			protected.GET("/files/stats", fileController.GetUserStats)
 			protected.PUT("/files/:fileID/access", fileController.TogglePublicAccess)
 			protected.DELETE("/files/:fileID", fileController.DeleteFile)
 
@@ -47,6 +51,14 @@ func SetupRouter(db *gorm.DB) *gin.Engine {
 			protected.PUT("/accesses/:accessID/access", accessController.UpdateAccess)
 			protected.DELETE("/accesses/:accessID", accessController.DeleteAccess)
 			protected.GET("/accesses/:accessID", accessController.GetAccess)
+		}
+
+		// Admin routes (for managing user limits)
+		admin := api.Group("/admin")
+		admin.Use(middleware.AuthRequired()) // TODO: Make seperate auth for admin
+		{
+			admin.GET("/users/limits", userController.GetAllUsersLimits)
+			admin.PUT("/users/:userID/limits", userController.UpdateUserLimits)
 		}
 	}
 

@@ -6,7 +6,6 @@ services:
     # image: ghcr.io/ankitprasad2005/defdrive:latest
     environment:
       - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
-      - WORKERS=${WORKERS}
       # - DB_HOST=db
       # - DB_PORT=5432
       # - DB_USER=${DB_USER}
@@ -16,6 +15,12 @@ services:
       - TZ=${TZ}
       - PORT=8080
       - DATA_PATH=/app/data
+      # - STORAGE_TYPE=${STORAGE_TYPE:-local}
+      # - MINIO_ENDPOINT=minio:9000
+      # - MINIO_ACCESS_KEY=${MINIO_ROOT_USER}
+      # - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWD}
+      # - MINIO_BUCKET_NAME=${MINIO_BUCKET_NAME:-defdrive}
+      # - MINIO_USE_SSL=false
     ports:
       - "${PORT:-8080}:8080"
     volumes:
@@ -23,6 +28,8 @@ services:
     depends_on:
       db: 
         condition: service_healthy
+      # minio:
+      #   condition: service_healthy
     restart: unless-stopped
 
   db:
@@ -44,24 +51,24 @@ services:
     ports:
       - ${DB_PORT}:5432
 
-  minio:
-    image: minio/minio:latest
-    restart: unless-stopped
-    ports:
-      - "${MINIO_PORT}:9000"  # API port
-      - "${MINIO_CONSOLE_PORT}:9001"  # Console port
-    environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
-    volumes:
-      # - minio_data:/data
-      - ${MINIO_DATA}:/data
-    command: server /data --console-address ":9001"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 30s
-      timeout: 20s
-      retries: 3
+  # minio:
+  #   image: minio/minio:latest
+  #   restart: unless-stopped
+  #   ports:
+  #     - "${MINIO_PORT}:9000"  # API port
+  #     - "${MINIO_CONSOLE_PORT}:9001"  # Console port
+  #   environment:
+  #     MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+  #     MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWD}
+  #   volumes:
+  #     # - minio_data:/data
+  #     - ${MINIO_DATA}:/data
+  #   command: server /data --console-address ":9001"
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+  #     interval: 30s
+  #     timeout: 20s
+  #     retries: 3
 
   # admin_db:
   #   image: nocodb/nocodb:latest
@@ -74,3 +81,5 @@ services:
   #   depends_on:
   #     - db
 
+volumes:
+  db_data:
